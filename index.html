@@ -757,67 +757,105 @@
         </div>
     </footer>
 
-    <script>
-        // Modal functionality
+   <script>
+        // Constants
+        const PURCHASE_MODAL = document.getElementById('purchaseModal');
+        const MODAL_PACKAGE_NAME = document.getElementById('modalPackageName');
+        const PROCESSING_ELEMENT = document.getElementById('processing');
+        const RESULT_ELEMENT = document.getElementById('result');
+        const PURCHASE_FORM = document.getElementById('purchaseForm');
+        const PHONE_INPUT = document.getElementById('phoneNumber');
+
+        // State variables
         let currentPackage = '';
         let currentPrice = 0;
 
+        // Function to open the purchase modal
         function openModal(packageName, price) {
             currentPackage = packageName;
             currentPrice = price;
-            document.getElementById('modalPackageName').textContent = packageName;
-            document.getElementById('purchaseModal').style.display = 'flex';
+            MODAL_PACKAGE_NAME.textContent = packageName;
+            PURCHASE_MODAL.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            document.getElementById('processing').style.display = 'none';
-            document.getElementById('result').style.display = 'none';
-            document.getElementById('purchaseForm').style.display = 'block';
+            PROCESSING_ELEMENT.style.display = 'none';
+            RESULT_ELEMENT.style.display = 'none';
+            PURCHASE_FORM.style.display = 'block';
         }
 
+        // Function to close the modal
         function closeModal() {
-            document.getElementById('purchaseModal').style.display = 'none';
+            PURCHASE_MODAL.style.display = 'none';
             document.body.style.overflow = 'auto';
-            document.getElementById('purchaseForm').reset();
+            PURCHASE_FORM.reset();
+        }
+
+        // Function to validate phone number format
+        function validatePhoneNumber(phoneNumber) {
+            // Remove any spaces or special characters that might be used for formatting
+            const cleanedNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+            
+            // Check if the number matches any of the valid formats
+            if (!/^(\+254[17]\d{8}|254[17]\d{8}|0[17]\d{8})$/.test(cleanedNumber)) {
+                alert('Please enter a valid M-Pesa phone number starting with 254, +254, 07, or 01 (e.g. 254712345678, +254712345678, 0712345678, or 0112345678)');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Function to show processing state
+        function showProcessing() {
+            PURCHASE_FORM.style.display = 'none';
+            PROCESSING_ELEMENT.style.display = 'block';
+        }
+
+        // Function to show success result
+        function showSuccess() {
+            PROCESSING_ELEMENT.style.display = 'none';
+            RESULT_ELEMENT.style.display = 'block';
+            RESULT_ELEMENT.innerHTML = `
+                <p style="color: green; font-weight: bold;">Payment request sent successfully!</p>
+                <p>Check your phone to complete payment of <strong>KES ${currentPrice}</strong> for:</p>
+                <p><strong>${currentPackage}</strong></p>
+                <p>You will receive confirmation SMS once payment is complete.</p>
+                <button onclick="closeModal()" class="btn btn-primary" style="margin-top: 1rem;">Close</button>
+            `;
+        }
+
+        // Function to show error result
+        function showError(errorMessage) {
+            PROCESSING_ELEMENT.style.display = 'none';
+            RESULT_ELEMENT.style.display = 'block';
+            RESULT_ELEMENT.innerHTML = `
+                <p style="color: red; font-weight: bold;">Error: ${errorMessage}</p>
+                <p>Please try again or contact our helpline for assistance.</p>
+                <button onclick="closeModal()" class="btn btn-primary" style="margin-top: 1rem;">Try Again</button>
+            `;
         }
 
         // Handle form submission
-        document.getElementById('purchaseForm').addEventListener('submit', async function(e) {
+        PURCHASE_FORM.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const phoneNumber = document.getElementById('phoneNumber').value;
+            const phoneNumber = PHONE_INPUT.value;
             
             if (phoneNumber) {
-                // Validate phone number format (254XXXXXXXXX)
-                if (!/^254[17]\d{8}$/.test(phoneNumber)) {
-                    alert('Please enter a valid M-Pesa phone number starting with 254 (e.g. 254712345678)');
+                // Validate phone number format
+                if (!validatePhoneNumber(phoneNumber)) {
                     return;
                 }
 
-                // Show processing, hide form
-                document.getElementById('purchaseForm').style.display = 'none';
-                document.getElementById('processing').style.display = 'block';
+                // Show processing state
+                showProcessing();
                 
                 try {
                     // In a real implementation, this would call your backend API
                     const response = await simulateSTKPush(phoneNumber, currentPrice, currentPackage);
                     
                     // Show success message
-                    document.getElementById('processing').style.display = 'none';
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('result').innerHTML = `
-                        <p style="color: green; font-weight: bold;">Payment request sent successfully!</p>
-                        <p>Check your phone to complete payment of <strong>KES ${currentPrice}</strong> for:</p>
-                        <p><strong>${currentPackage}</strong></p>
-                        <p>You will receive confirmation SMS once payment is complete.</p>
-                        <button onclick="closeModal()" class="btn btn-primary" style="margin-top: 1rem;">Close</button>
-                    `;
+                    showSuccess();
                 } catch (error) {
                     // Show error message
-                    document.getElementById('processing').style.display = 'none';
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('result').innerHTML = `
-                        <p style="color: red; font-weight: bold;">Error: ${error.message}</p>
-                        <p>Please try again or contact our helpline for assistance.</p>
-                        <button onclick="closeModal()" class="btn btn-primary" style="margin-top: 1rem;">Try Again</button>
-                    `;
+                    showError(error.message);
                 }
             }
         });
@@ -866,7 +904,7 @@
 
         // Close modal when clicking outside
         window.addEventListener('click', function(e) {
-            if (e.target === document.getElementById('purchaseModal')) {
+            if (e.target === PURCHASE_MODAL) {
                 closeModal();
             }
         });
